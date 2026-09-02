@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>Sebastian Fitness Coach</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#f5f7fb}
+.app{max-width:720px;margin:auto;min-height:100vh;padding:20px 16px 90px}
+h1,h2,h3,p{margin-top:0}.muted{color:#9ca3af}.card{background:#151c2f;border:1px solid #26304a;border-radius:18px;padding:18px;margin:12px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#10172a;border-radius:14px;padding:14px}.stat b{font-size:22px}
+button{border:0;border-radius:12px;padding:12px 14px;font-weight:700;background:#6d5dfc;color:white;font-size:15px}button.secondary{background:#26304a}button.danger{background:#7f1d1d}
+.nav{position:fixed;bottom:0;left:0;right:0;background:#0d1324;border-top:1px solid #26304a;display:flex;justify-content:center;gap:8px;padding:10px}.nav button{background:transparent;color:#cbd5e1}
+.exercise{padding:14px 0;border-top:1px solid #26304a}.exercise:first-child{border-top:0}.sets{display:flex;gap:7px;flex-wrap:wrap}.set input{width:70px;padding:10px;border-radius:9px;border:1px solid #39445f;background:#0d1425;color:white}
+.pill{display:inline-block;padding:6px 10px;border-radius:99px;background:#24304a;color:#cbd5e1;font-size:12px;margin:2px}.good{color:#86efac}.warn{color:#fde68a}
+label{font-size:13px;color:#9ca3af;display:block;margin:8px 0 4px}input,select{width:100%;padding:11px;border-radius:10px;border:1px solid #39445f;background:#0d1425;color:white}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.hidden{display:none}
+
+.video{width:100%;height:220px;border:0;border-radius:14px;background:#0d1425}
+.timer{font-size:38px;font-weight:800;text-align:center;margin:10px 0}.coach{background:#111a31;border-left:4px solid #6d5dfc;padding:12px;border-radius:10px}
+canvas{width:100%;height:220px;background:#0d1425;border-radius:14px}
+</style>
+</head>
+<body>
+<div class="app">
+<div id="app"></div>
+</div>
+<div class="nav">
+<button onclick="show('home')">Home</button>
+<button onclick="show('schedule')">Schedule</button>
+<button onclick="show('workout')">Workout</button>
+<button onclick="show('progress')">Progress</button>
+</div>
+<script>
+const plan=[
+{name:"Chest + Triceps",ex:[["Bench Press",3,6,8],["Incline Dumbbell Press",3,8,10],["Cable Fly",3,10,15],["Machine Chest Press",2,10,12],["Tricep Pushdown",3,10,15],["Overhead Tricep Extension",2,10,15]]},
+{name:"Back + Biceps",ex:[["Lat Pulldown / Pull-ups",3,6,10],["Chest-Supported Row",3,8,12],["Seated Cable Row",3,8,12],["Single-Arm Lat Pulldown",2,10,15],["Rear-Delt Fly",3,12,20],["EZ-Bar Curl",3,8,12],["Incline Dumbbell Curl",2,10,15]]},
+{name:"Legs",ex:[["Hack Squat / Back Squat",3,6,10],["Romanian Deadlift",3,8,10],["Leg Press",3,10,15],["Leg Curl",3,10,15],["Leg Extension",2,12,15],["Standing Calf Raise",3,8,15],["Seated Calf Raise",2,12,20]]},
+{name:"Shoulders + Arms",ex:[["Seated Dumbbell Shoulder Press",3,6,10],["Cable Lateral Raise",4,10,20],["Reverse Pec Deck",3,12,20],["Preacher Curl",3,8,12],["Cable Curl",2,10,15],["Skull Crushers",3,8,12],["Rope Pushdown",2,10,15]]}
+];
+let state=JSON.parse(localStorage.getItem("sebFitness")||"null")||{profile:{weight:150,height:"5'7",goal:"Stay lean + build muscle",protein:150},days:["Mon","Tue","Wed","Thu"],logs:[],today:0};
+function save(){localStorage.setItem("sebFitness",JSON.stringify(state))}
+function show(page){
+if(page==="home")home(); if(page==="schedule")schedule(); if(page==="workout")workout(); if(page==="progress")progress();
+}
+function home(){
+let w=state.weight||state.profile.weight, last=state.logs.at(-1);
+document.getElementById("app").innerHTML=`<h1>Sebastian's Coach</h1><p class="muted">Build muscle. Stay lean. Keep progressing.</p>
+<div class="card"><h2>Today's Recommendation</h2><div class="pill">DAY ${state.today+1} / 4</div><h2>${plan[state.today].name}</h2>
+<p class="muted">Target effort: 1–2 reps in reserve on most working sets.</p><button onclick="show('workout')">Start Workout</button></div>
+<div class="grid"><div class="stat"><span class="muted">Weight</span><br><b>${w} lb</b></div><div class="stat"><span class="muted">Protein</span><br><b>${state.profile.protein}g</b></div></div>
+<div class="card"><h3>Coach rules</h3><p>Hit the top of the rep range on every set with good form → add weight next time. Otherwise, keep the weight and beat your reps.</p>
+<p class="muted">Starting nutrition target: roughly 2,300–2,500 calories/day. Adjust based on 2–3 weeks of weight and performance trends.</p></div>`;
+}
+function schedule(){
+document.getElementById("app").innerHTML=`<h1>Schedule</h1><p class="muted">Choose your four lifting days. The program advances in order.</p>
+<div class="card">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=>`<label><input type="checkbox" ${state.days.includes(d)?"checked":""} onchange="toggleDay('${d}',this.checked)"> ${d}</label>`).join("")}
+<p class="muted">Tip: four consecutive days works, but if fatigue gets high, use a rest day and continue the sequence.</p></div>
+<div class="card"><h3>Current rotation</h3>${plan.map((p,i)=>`<p><span class="pill">Day ${i+1}</span> ${p.name}</p>`).join("")}</div>`;
+}
+function toggleDay(d,on){if(on&&!state.days.includes(d))state.days.push(d);if(!on)state.days=state.days.filter(x=>x!==d);save();schedule()}
+let restTimer=null,restEnd=0;
+function workout(){
+let p=plan[state.today], prev={}; state.logs.forEach(l=>l.exercises.forEach(e=>prev[e.name]=e.sets));
+document.getElementById("app").innerHTML=`<h1>${p.name}</h1>
+<div class="card"><div class="timer" id="timer">90</div><div class="row"><button onclick="startRest(90)">90s Rest</button><button class="secondary" onclick="startRest(150)">150s</button></div><p class="muted">Use 2–3 min for compounds and about 60–120s for isolation work.</p></div>
+<div class="card coach" id="coach">Coach: Log your first set and I'll suggest what to beat next time.</div>
+<div class="card">${p.ex.map((e,i)=>{let old=prev[e[0]]||[];let suggestion=old.length?old[old.length-1].w+" lb × "+old[old.length-1].r+" reps":"Choose a starting weight";return `<div class="exercise"><h3>${e[0]}</h3><span class="pill">${e[1]} sets × ${e[2]}–${e[3]} reps</span><span class="pill">Next: ${suggestion}</span>
+${old.length?`<p class="muted">Last: ${old.map(x=>x.w+"×"+x.r).join(", ")}</p>`:""}
+<div class="sets">${Array.from({length:e[1]},(_,j)=>`<div class="set"><label>Set ${j+1}</label><input id="w${i}_${j}" type="number" placeholder="lb" oninput="coachHint(${i},${j},${e[2]},${e[3]})"><input id="r${i}_${j}" type="number" placeholder="reps" oninput="coachHint(${i},${j},${e[2]},${e[3]})"></div>`).join("")}</div></div>`}).join("")}
+<button onclick="finishWorkout()">Finish Workout</button></div>
+<div class="card"><h3>Exercise demo</h3><p class="muted">Tap an exercise to search for a current demonstration.</p>
+<select id="demoSelect" onchange="openDemo()">${p.ex.map(e=>`<option>${e[0]}</option>`).join("")}</select></div>`;
+}
+function coachHint(i,j,min,max){
+let w=+document.getElementById(`w${i}_${j}`).value||0,r=+document.getElementById(`r${i}_${j}`).value||0;
+let el=document.getElementById("coach"); if(!w||!r)return;
+if(r>max) el.textContent="Coach: Great — you're above the rep range. Add a small amount of weight next time.";
+else if(r>=max) el.textContent="Coach: You hit the top of the range. If form was solid, increase weight next session.";
+else if(r>=min) el.textContent="Coach: You're in the target range. Try to match or beat this next time.";
+else el.textContent="Coach: Keep the weight controlled and build toward the bottom of the target range.";
+}
+function startRest(sec){
+clearInterval(restTimer); restEnd=Date.now()+sec*1000; document.getElementById("timer").textContent=sec;
+restTimer=setInterval(()=>{let left=Math.max(0,Math.ceil((restEnd-Date.now())/1000));document.getElementById("timer").textContent=left;if(!left){clearInterval(restTimer);navigator.vibrate?.([200,100,200]);}},250);
+}
+function openDemo(){
+let q=document.getElementById("demoSelect").value;
+window.open("https://www.youtube.com/results?search_query="+encodeURIComponent(q+" proper form exercise demonstration"),"_blank");
+}
+function finishWorkout(){
+let p=plan[state.today], exercises=p.ex.map((e,i)=>({name:e[0],sets:Array.from({length:e[1]},(_,j)=>({w:+document.getElementById(`w${i}_${j}`).value||0,r:+document.getElementById(`r${i}_${j}`).value||0})).filter(x=>x.w||x.r)})).filter(x=>x.sets.length);
+if(!exercises.length){alert("Log at least one set before finishing the workout.");return;}
+state.logs.push({date:new Date().toISOString(),day:p.name,exercises});state.today=(state.today+1)%4;save();home();
+}
+function progress(){
+let total=state.logs.length, recent=state.logs.slice(-5);
+document.getElementById("app").innerHTML=`<h1>Progress</h1><div class="grid"><div class="stat"><span class="muted">Workouts logged</span><br><b>${total}</b></div><div class="stat"><span class="muted">Current bodyweight</span><br><b>${state.profile.weight} lb</b></div></div>
+<div class="card"><h3>Profile</h3><div class="row"><div><label>Weight (lb)</label><input id="bw" value="${state.profile.weight}"></div><div><label>Protein (g)</label><input id="pr" value="${state.profile.protein}"></div></div><br><button onclick="updateProfile()">Save profile</button></div>
+<div class="card"><h3>Strength trend</h3><canvas id="chart" width="650" height="220"></canvas><p class="muted">Estimated strength trend from your logged working sets.</p></div><div class="card"><h3>Recent sessions</h3>${recent.length?recent.reverse().map(l=>`<p><b>${l.day}</b><br><span class="muted">${new Date(l.date).toLocaleDateString()}</span></p>`).join(""):"<p class='muted'>Finish your first workout to start building your history.</p>"}</div>
+<div class="card"><h3>Data</h3><button class="secondary" onclick="exportData()">Export backup</button> <button class="danger" onclick="resetData()">Reset</button></div>`;
+}
+setTimeout(drawChart,0);
+function drawChart(){
+let canvas=document.getElementById("chart"); if(!canvas)return;
+let ctx=canvas.getContext("2d"), dpr=window.devicePixelRatio||1, rect=canvas.getBoundingClientRect();
+canvas.width=Math.max(320,Math.floor(rect.width*dpr)); canvas.height=Math.floor(220*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
+let w=rect.width||650,h=220; ctx.clearRect(0,0,w,h);
+let points=[];
+state.logs.forEach((log,li)=>log.exercises.forEach(ex=>ex.sets.forEach(set=>{
+  if(set.w&&set.r) points.push({x:li+1,y:set.w*(1+set.r/30)});
+})));
+if(points.length<2){ctx.fillStyle="#9ca3af";ctx.font="14px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif";ctx.fillText("Log more sets to see your strength trend.",18,34);return;}
+let minY=Math.min(...points.map(p=>p.y)),maxY=Math.max(...points.map(p=>p.y));
+if(maxY===minY){maxY=minY+1;}
+let pad={l:38,r:16,t:18,b:28};
+ctx.strokeStyle="#26304a";ctx.lineWidth=1;
+ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,h-pad.b);ctx.lineTo(w-pad.r,h-pad.b);ctx.stroke();
+ctx.fillStyle="#9ca3af";ctx.font="11px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif";
+ctx.fillText(Math.round(maxY)+" lb",4,pad.t+4);ctx.fillText(Math.round(minY)+" lb",4,h-pad.b);
+ctx.beginPath();
+points.forEach((p,i)=>{let x=pad.l+(p.x-1)/Math.max(1,(state.logs.length-1))*(w-pad.l-pad.r);let y=(h-pad.b)-(p.y-minY)/(maxY-minY)*(h-pad.t-pad.b);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});
+ctx.strokeStyle="#8b7cff";ctx.lineWidth=3;ctx.stroke();
+points.forEach(p=>{let x=pad.l+(p.x-1)/Math.max(1,(state.logs.length-1))*(w-pad.l-pad.r);let y=(h-pad.b)-(p.y-minY)/(maxY-minY)*(h-pad.t-pad.b);ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle="#8b7cff";ctx.fill();});
+}
+function updateProfile(){state.profile.weight=+document.getElementById("bw").value||150;state.profile.protein=+document.getElementById("pr").value||150;save();progress()}
+function exportData(){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}));a.download="sebastian-fitness-backup.json";a.click()}
+function resetData(){if(confirm("Reset all workout history?")){localStorage.removeItem("sebFitness");location.reload()}}
+show("home");
+</script>
+</body>
+</html>
